@@ -69,7 +69,8 @@ executable_type()
         | sed 's/,[^,]*stripped//g' \
         | sed 's/[[:space:]]\+/ /g' \
         | sed 's/[[:space:]]*(SYSV)//g' \
-        | sed 's/[[:space:]]*(GNU\/Linux)//g'
+        | sed 's/[[:space:]]*(GNU\/Linux)//g' \
+        | sed 's/,[^,]*for GNU\/Linux [^d]*.[^d]*.[^d]*//g'
 }
 
 get_expected_dynamic_executable_type()
