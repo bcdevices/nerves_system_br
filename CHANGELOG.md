@@ -1,5 +1,60 @@
 # Changelog
 
+## v1.0.1
+
+Note: Versioning on `nerves_system_br` doesn't follow semver. This particular
+release is low-risk, but it is recommended that Nerves systems specify the
+`nerves_system_br` version explicitly and review the change notes here to ensure
+that a version bump of one of the included projects is non-breaking.
+
+* New features
+  * Erlang 20.3.5
+  * pigpio V67
+  * Buildroot 2018.02.2. This is a bugfix/security patch release to 2018.02.1
+  * fwup 1.1.0
+
+* Bug fixes
+  * Fixed PKG_CONFIG environment variables to point to staging (target) versions
+    of packages. This is needed for cmake and Makefile projects that use
+    pkg-config.
+
+* Removed packages
+  * erlang-relx - This version of relx hadn't been used in a long time. Since it
+    was also out-of-date, the choice was made to remove it.
+
+## v1.0.0
+
+* Bug Fixes
+  * Include buildroot patch for enabling widechar for host ncurses to fix issues
+    with `make linux-menuconfig` rendering a lot of `@?`characters.
+
+## v1.0.0-rc.4
+
+* New features
+  * Buildroot 2018.02.1 patch release integrated. This removes the need for two
+    patches that we had been maintaining and includes a few minor version bugs
+    bug fixes.
+  * Refactor the rootfs_overlay merge logic to support multiple rootfs_overlays.
+    To use this in your programs, a corresponding update is required in the
+    `nerves` project. See [nerves PR #269](https://github.com/nerves-project/nerves/pull/269).
+
+* Bug fixes
+  * Prevent the scrubber from erasing /etc/services and /etc/protocol if the
+    user provides their own versions.
+
+## v1.0.0-rc.3
+
+* New features
+  * Erlang 20.3.2
+  * Pull in BR patches required to support the Raspberry Pi 3 B+
+
+* Bug fixes
+  * Updated the release scrubber to call `readelf` instead of `file` for
+    checking whether an executable was made for the right system. This makes the
+    check more portable. While doing this the Linux kernel header check was
+    removed. This check was too conservative and disallowed Rust and Go binaries
+    that were fine.
+
 ## v1.0.0-rc.2
 
 * New features
