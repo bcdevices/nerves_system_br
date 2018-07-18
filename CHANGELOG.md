@@ -1,5 +1,95 @@
 # Changelog
 
+## v1.3.2
+
+* Bug fixes
+  * Fix issue with calling readelf on shell scripts and improve error message.
+  * Include patch for QT5WebEngine parallel compile fix.
+
+## v1.3.1
+
+* New features
+  * erlinit 1.4.4
+  * nbtty 0.4.0
+
+* Bug fixes
+  * Removed call to 'file' from OTP release scrubbing script to get rid of a
+    warning some users were seeing.
+
+The erlinit version bump fixes the following issues:
+
+  * When running Docker on Nerves targets, Docker would report parse errors when
+    detecting filesystems due to erlinit not filling out a field. This fixes
+    that.
+  * Applications would inherit erlinit's signal mask. This caused confusion, so
+    now a default signal mask is passed on to the application.
+
+The nbtty version bump fixes an issue where exiting from Erlang wouldn't be
+detected and adds support for specifying tty files. The latter is needed for
+those wanting to use configfs to configure the gadget USB interface.
+
+## v1.3.0
+
+* New features
+  * Erlang 21.0
+
+## v1.2.2
+
+* New features
+  * boardid 1.1.1
+  * fwup 1.2.1
+  * Erlang 20.3.8
+
+The new boardid version fixes an issue with using empty serial numbers from
+the U-Boot environment block. The new behavior is to fall back to use other IDs
+if the saved serial number is blank.
+
+The new fwup version improves the meta-uuid implementation so that firmware
+update servers can determine with a high degree of confidence what's running on
+a device without users needing be accurate with version numbers or needing to
+inject a version control ID into their fwup.conf scripts.
+
+## v1.2.1
+
+* Bug fixes
+  * Patched regression in Buildroot 2018.05 that made it impossible to enable
+    QtWebEngine
+
+## v1.2.0
+
+* New features
+  * Buildroot 2018.05
+  * boardid 1.1.0
+  * bborg-overlays (latest SHA)
+
+Buildroot 2018.05 contains the normal set of minor version bumps throughout. It
+let us remove 8 patches that we had been carrying around. See the [Buildroot
+announcement](http://lists.busybox.net/pipermail/buildroot/2018-June/222697.html)
+for details.
+
+The `boardid` bump improves about the U-boot environment block support by
+simplifying the configuration needed in the `erlinit.config` script.
+
+The bborg-overlays project has had several improvements since we last took a
+snapshot of it. Some of these are needed for the upcoming device tree overlay
+support in `nerves_system_bbb` that uses the new U-boot overlay support.
+
+## v1.1.0
+
+* New features
+  * Erlang 20.3.6
+  * Qt5 5.10.1
+  * boardid 1.0.0
+  * erlinit 1.4.1
+
+The Qt5 version bump pulls in a newer version of Chromium for those users making
+kiosks.
+
+The `boardid` update adds support for pulling serial numbers from U-boot
+environment blocks. This is very useful if you assign serial numbers to boards
+on the manufacturing line and would like hostnames, node names and mDNS to use
+your serial numbers.
+
 ## v1.0.1
 
 Note: Versioning on `nerves_system_br` doesn't follow semver. This particular
