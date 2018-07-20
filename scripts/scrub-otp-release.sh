@@ -70,7 +70,7 @@ executable_type()
     READELF_OUTPUT="$2"
 
     ELF_MACHINE=$(echo "$READELF_OUTPUT" | sed -E -e '/^  Machine: +(.+)/!d; s//\1/;' | head -1)
-    ELF_FLAGS=$(echo "$READELF_OUTPUT" | sed -E -e '/^  Flags: +(.+)/!d; s//\1/;' | sed -E -e 's/(, <unknown>)//' | head -1)
+    ELF_FLAGS=$(echo "$READELF_OUTPUT" | sed -E -e '/^  Flags: +(.+)/!d; s//\1/;' | sed -E -e 's/(, <unknown>)//' | sed -E -e 's/^0x[0-9]*\,\s//' | head -1)
 
     if [ -z "$ELF_MACHINE" ]; then
         echo "$SCRIPT_NAME: ERROR: Didn't expect empty machine field in ELF header in $FILE." 1>&2
