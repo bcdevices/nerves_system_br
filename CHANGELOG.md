@@ -1,5 +1,35 @@
 # Changelog
 
+## v1.4.1
+
+The busybox config has been refreshed in this version but should contain no
+intentional changes from the previous version.
+
+* Bug Fixes
+  * Updated docker image to set user id and group id in entrypoint script.
+    This fixes an issue when building packages that require the user has
+    a defined user.
+
+## v1.4.0
+
+This release adds experimental support for compiling Qt code that's inside an
+Elixir or Erlang project. This lets you build Qt-based UIs without having to
+include your Qt/C++ code inside a custom Nerves system.
+
+This release also includes the `rngd` program in all Nerves systems. Nerves
+systems almost universally have a lack of entropy on start and this can delay
+boot in many cases. The `rngd` utility is part of the solution to supplying more
+entropy to the Linux kernel at boot and is a very small binary.
+
+* Package updates
+  * Buildroot 2018.05.1 - Bugfix/security updates to many packages
+  * erlang 21.0.4
+  * fwup v1.2.4
+
+* Bug fixes
+  * Override more Make implicit variables. This catches calls to ar, as, and ld
+    so that the crosscompiler versions can be used instead.
+
 ## v1.3.2
 
 * Bug fixes
