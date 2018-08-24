@@ -7,7 +7,7 @@ USER root
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV ERLANG_OTP_VERSION=21.0
-ENV FWUP_VERSION=1.2.4
+ENV FWUP_VERSION=1.2.5
 ENV ERLANG_PKG='erlang-solutions_1.0_all.deb'
 ENV ERLANG_URL="https://packages.erlang-solutions.com/${ERLANG_PKG}"
 ENV LANG C.UTF-8
@@ -68,16 +68,13 @@ RUN dpkg --add-architecture i386 \
     bc \
     squashfs-tools \
     gnupg \
+    libmnl-dev \
   && curl -o "/tmp/${ERLANG_PKG}" ${ERLANG_URL} \
   && dpkg -i "/tmp/${ERLANG_PKG}" \
   && apt-get update \
   && apt-get -y install \
     "esl-erlang=1:${ERLANG_OTP_VERSION}" \
   && rm -rf /var/lib/apt/lists/* \
-  && wget https://github.com/fhunleth/fwup/releases/download/v${FWUP_VERSION}/fwup_${FWUP_VERSION}_amd64.deb \
-  && dpkg -i fwup_${FWUP_VERSION}_amd64.deb \
-  && rm -f *.tar.gz \
-  && rm -f fwup_${FWUP_VERSION}_amd64.deb \
   && mkdir -p /root/.ssh \
   && ssh-keyscan -t rsa github.com > /root/.ssh/known_hosts \
   && chmod 700 /root/.ssh \
@@ -86,5 +83,10 @@ RUN dpkg --add-architecture i386 \
   && apt-get -q -y autoremove \
   && apt-get -q -y clean \
   && mkdir -p /nerves/build && chmod 777 /nerves/build
+
+RUN wget https://github.com/fhunleth/fwup/releases/download/v${FWUP_VERSION}/fwup_${FWUP_VERSION}_amd64.deb \
+  && dpkg -i fwup_${FWUP_VERSION}_amd64.deb \
+  && rm -f *.tar.gz \
+  && rm -f fwup_${FWUP_VERSION}_amd64.deb
 
 ENTRYPOINT [ "/nerves/docker-entrypoint.sh" ]
