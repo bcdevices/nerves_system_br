@@ -29,8 +29,9 @@ if [ -e $NERVES_SYSTEM/host ]; then
     # For Buildroot builds, use the Buildroot provided versions of pkg-config
     # and perl.
     export PKG_CONFIG=$NERVES_TOOLCHAIN/usr/bin/pkg-config
-    export PKG_CONFIG_SYSROOT_DIR=/
-    export PKG_CONFIG_LIBDIR=$NERVES_TOOLCHAIN/usr/lib/pkgconfig
+    export PKG_CONFIG_SYSROOT_DIR=$NERVES_SYSTEM/staging
+    export PKG_CONFIG_LIBDIR=$NERVES_SYSTEM/staging/usr/lib/pkgconfig
+
     export PERLLIB=$NERVES_TOOLCHAIN/usr/lib/perl
 
     pathadd $NERVES_TOOLCHAIN/usr/bin
@@ -114,6 +115,11 @@ export ERL_CFLAGS="-I$ERTS_DIR/include -I$ERL_INTERFACE_DIR/include"
 export ERL_LDFLAGS="-L$ERTS_DIR/lib -L$ERL_INTERFACE_DIR/lib -lerts -lerl_interface -lei"
 export REBAR_TARGET_ARCH=$(basename $CROSSCOMPILE)
 
+# Qt/QMake
+if [ -e "$NERVES_SDK_SYSROOT/mkspecs/devices/linux-buildroot-g++" ]; then
+    export QMAKESPEC=$NERVES_SDK_SYSROOT/mkspecs/devices/linux-buildroot-g++
+fi
+
 # Rebar naming
 export ERL_EI_LIBDIR="$ERL_INTERFACE_DIR/lib"
 export ERL_EI_INCLUDE_DIR="$ERL_INTERFACE_DIR/include"
@@ -145,6 +151,17 @@ if [ "$NERVES_HOST_ERL_MAJOR_VER" != "$NERVES_TARGET_ERL_MAJOR_VER" ]; then
     echo "This will likely cause Erlang code compiled for the target to fail in"
     echo "unexpected ways. Install an Erlang OTP release that matches the target"
     echo "version before continuing."
+    echo
+    echo "Upgrading the target is most likely what you want to do. Sometimes,"
+    echo "for whatever reason, it may not be an option for you. With that in mind,"
+    echo "another option is to use a different version of the nerves system for"
+    echo "your target, one that uses the Erlang OTP version you have on your host."
+    echo
+    echo "Example:"
+    echo "  Your host has Erlang OTP 20 and your target is a rpi0."
+    echo "  The latest version of `nerves_system_rpi0` is say, `v1.2.0` and it"
+    echo "  uses Erlang OTP 21. You can try downgrading a release, to `v1.1.1` where"
+    echo "  the Erlang OTP version is 20."
     echo
     return 1
 fi

@@ -40,6 +40,8 @@ end
 system_path = System.get_env("NERVES_SYSTEM") ||
   Mix.raise("You must set NERVES_SYSTEM to the system directory prior to requiring this file")
 
+sdk_sysroot = Path.join(system_path, "staging")
+
 {_toolchain_path, crosscompile} =
   if File.dir?(Path.join(system_path, "host")) do
     # Grab the toolchain from a Buildroot output directory
@@ -49,8 +51,8 @@ system_path = System.get_env("NERVES_SYSTEM") ||
     crosscompile = Utils.crosscompile(gcc_path, system_path)
 
     System.put_env("PKG_CONFIG", Path.join(toolchain_path, "usr/bin/pkg-config"))
-    System.put_env("PKG_CONFIG_SYSROOT_DIR", "/")
-    System.put_env("PKG_CONFIG_LIBDIR", Path.join(toolchain_path, "usr/lib/pkgconfig"))
+    System.put_env("PKG_CONFIG_SYSROOT_DIR", sdk_sysroot)
+    System.put_env("PKG_CONFIG_LIBDIR", Path.join(sdk_sysroot, "usr/lib/pkgconfig"))
     System.put_env("PERLLIB", Path.join(toolchain_path, "usr/lib/perl"))
 
     Path.join(toolchain_path, "usr/bin")
@@ -82,8 +84,6 @@ system_path = System.get_env("NERVES_SYSTEM") ||
 
     {toolchain_path, crosscompile}
   end
-
-sdk_sysroot = Path.join(system_path, "staging")
 
 System.put_env("NERVES_SDK_IMAGES", Path.join(system_path, "images"))
 System.put_env("NERVES_SDK_SYSROOT", sdk_sysroot)
@@ -119,17 +119,31 @@ erl_system_lib_dir =
   Path.join(erl_lib_dir, "/lib")
 System.put_env("ERL_SYSTEM_LIB_DIR", erl_system_lib_dir)
 
+# Override Make implicit variables with their crosscompile versions
+# https://www.gnu.org/software/make/manual/html_node/Implicit-Variables.html
+System.put_env("AR", "#{crosscompile}-ar")
+System.put_env("AS", "#{crosscompile}-as")
 System.put_env("CC", "#{crosscompile}-gcc")
 System.put_env("CXX", "#{crosscompile}-g++")
+System.put_env("LD", "#{crosscompile}-ld")
+System.put_env("STRIP", "#{crosscompile}-strip")
+
+# Set defaults for compiler flags
 System.put_env("CFLAGS", "-D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64  -pipe -Os -I#{system_include_path}")
 System.put_env("CXXFLAGS", "-D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64  -pipe -Os -I#{system_include_path}")
 System.put_env("LDFLAGS", "--sysroot=#{sdk_sysroot}")
-System.put_env("STRIP", "#{crosscompile}-strip")
 System.put_env("ERL_CFLAGS", "-I#{erts_dir}/include -I#{erl_interface_dir}/include")
 System.put_env("ERL_LDFLAGS", "-L#{erts_dir}/lib -L#{erl_interface_dir}/lib -lerts -lerl_interface -lei")
-System.put_env("REBAR_TARGET_ARCH", Path.basename(crosscompile))
+
+# Qt/Qmake support
+qmakespec_dir =
+  Path.join(system_path, "staging/mkspecs/devices/linux-buildroot-g++")
+if File.dir?(qmakespec_dir) do
+  System.put_env("QMAKESPEC", qmakespec_dir)
+end
 
 # Rebar naming
+System.put_env("REBAR_TARGET_ARCH", Path.basename(crosscompile))
 System.put_env("ERL_EI_LIBDIR", Path.join(erl_interface_dir, "lib"))
 System.put_env("ERL_EI_INCLUDE_DIR", Path.join(erl_interface_dir, "include"))
 

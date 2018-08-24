@@ -1,5 +1,204 @@
 # Changelog
 
+## v1.4.3
+
+* Package updates
+  * Qt 5.11.1 - Update from 5.10.1 to get more recent Chromium version
+  * erlinit v1.4.6 - Fix permissions issue when running Chromium non-root
+
+## v1.4.2
+
+This release adds experimental support for Erlang/OTP 20 in systems. Official
+Nerves Systems do not use this, but it's possible to enable by creating a custom
+system, running `make menuconfig` and navigating to the Erlang options to enable
+OTP 20.  Please provide feedback if this works so we know that it is sufficient
+and worth maintaining going forward.
+
+* Package updates
+  * erlang 21.0.5 or 20.3.8.5
+  * fwup v1.2.5
+  * erlinit v1.4.5
+
+* Bug fixes
+  * Fix broken QMAKESPEC path for building Qt projects in Elixir projects
+  * Pull in the host-ncurses build patch from upstream Buildroot. This fixes the
+    root cause that triggered the Docker update in v1.4.1.
+
+## v1.4.1
+
+The busybox config has been refreshed in this version but should contain no
+intentional changes from the previous version.
+
+* Bug Fixes
+  * Updated docker image to set user id and group id in entrypoint script.
+    This fixes an issue when building packages that require the user has
+    a defined user.
+
+## v1.4.0
+
+This release adds experimental support for compiling Qt code that's inside an
+Elixir or Erlang project. This lets you build Qt-based UIs without having to
+include your Qt/C++ code inside a custom Nerves system.
+
+This release also includes the `rngd` program in all Nerves systems. Nerves
+systems almost universally have a lack of entropy on start and this can delay
+boot in many cases. The `rngd` utility is part of the solution to supplying more
+entropy to the Linux kernel at boot and is a very small binary.
+
+* Package updates
+  * Buildroot 2018.05.1 - Bugfix/security updates to many packages
+  * erlang 21.0.4
+  * fwup v1.2.4
+
+* Bug fixes
+  * Override more Make implicit variables. This catches calls to ar, as, and ld
+    so that the crosscompiler versions can be used instead.
+
+## v1.3.2
+
+* Bug fixes
+  * Fix issue with calling readelf on shell scripts and improve error message.
+  * Include patch for QT5WebEngine parallel compile fix.
+
+## v1.3.1
+
+* New features
+  * erlinit 1.4.4
+  * nbtty 0.4.0
+
+* Bug fixes
+  * Removed call to 'file' from OTP release scrubbing script to get rid of a
+    warning some users were seeing.
+
+The erlinit version bump fixes the following issues:
+
+  * When running Docker on Nerves targets, Docker would report parse errors when
+    detecting filesystems due to erlinit not filling out a field. This fixes
+    that.
+  * Applications would inherit erlinit's signal mask. This caused confusion, so
+    now a default signal mask is passed on to the application.
+
+The nbtty version bump fixes an issue where exiting from Erlang wouldn't be
+detected and adds support for specifying tty files. The latter is needed for
+those wanting to use configfs to configure the gadget USB interface.
+
+## v1.3.0
+
+* New features
+  * Erlang 21.0
+
+## v1.2.2
+
+* New features
+  * boardid 1.1.1
+  * fwup 1.2.1
+  * Erlang 20.3.8
+
+The new boardid version fixes an issue with using empty serial numbers from
+the U-Boot environment block. The new behavior is to fall back to use other IDs
+if the saved serial number is blank.
+
+The new fwup version improves the meta-uuid implementation so that firmware
+update servers can determine with a high degree of confidence what's running on
+a device without users needing be accurate with version numbers or needing to
+inject a version control ID into their fwup.conf scripts.
+
+## v1.2.1
+
+* Bug fixes
+  * Patched regression in Buildroot 2018.05 that made it impossible to enable
+    QtWebEngine
+
+## v1.2.0
+
+* New features
+  * Buildroot 2018.05
+  * boardid 1.1.0
+  * bborg-overlays (latest SHA)
+
+Buildroot 2018.05 contains the normal set of minor version bumps throughout. It
+let us remove 8 patches that we had been carrying around. See the [Buildroot
+announcement](http://lists.busybox.net/pipermail/buildroot/2018-June/222697.html)
+for details.
+
+The `boardid` bump improves about the U-boot environment block support by
+simplifying the configuration needed in the `erlinit.config` script.
+
+The bborg-overlays project has had several improvements since we last took a
+snapshot of it. Some of these are needed for the upcoming device tree overlay
+support in `nerves_system_bbb` that uses the new U-boot overlay support.
+
+## v1.1.0
+
+* New features
+  * Erlang 20.3.6
+  * Qt5 5.10.1
+  * boardid 1.0.0
+  * erlinit 1.4.1
+
+The Qt5 version bump pulls in a newer version of Chromium for those users making
+kiosks.
+
+The `boardid` update adds support for pulling serial numbers from U-boot
+environment blocks. This is very useful if you assign serial numbers to boards
+on the manufacturing line and would like hostnames, node names and mDNS to use
+your serial numbers.
+
+## v1.0.1
+
+Note: Versioning on `nerves_system_br` doesn't follow semver. This particular
+release is low-risk, but it is recommended that Nerves systems specify the
+`nerves_system_br` version explicitly and review the change notes here to ensure
+that a version bump of one of the included projects is non-breaking.
+
+* New features
+  * Erlang 20.3.5
+  * pigpio V67
+  * Buildroot 2018.02.2. This is a bugfix/security patch release to 2018.02.1
+  * fwup 1.1.0
+
+* Bug fixes
+  * Fixed PKG_CONFIG environment variables to point to staging (target) versions
+    of packages. This is needed for cmake and Makefile projects that use
+    pkg-config.
+
+* Removed packages
+  * erlang-relx - This version of relx hadn't been used in a long time. Since it
+    was also out-of-date, the choice was made to remove it.
+
+## v1.0.0
+
+* Bug Fixes
+  * Include buildroot patch for enabling widechar for host ncurses to fix issues
+    with `make linux-menuconfig` rendering a lot of `@?`characters.
+
+## v1.0.0-rc.4
+
+* New features
+  * Buildroot 2018.02.1 patch release integrated. This removes the need for two
+    patches that we had been maintaining and includes a few minor version bugs
+    bug fixes.
+  * Refactor the rootfs_overlay merge logic to support multiple rootfs_overlays.
+    To use this in your programs, a corresponding update is required in the
+    `nerves` project. See [nerves PR #269](https://github.com/nerves-project/nerves/pull/269).
+
+* Bug fixes
+  * Prevent the scrubber from erasing /etc/services and /etc/protocol if the
+    user provides their own versions.
+
+## v1.0.0-rc.3
+
+* New features
+  * Erlang 20.3.2
+  * Pull in BR patches required to support the Raspberry Pi 3 B+
+
+* Bug fixes
+  * Updated the release scrubber to call `readelf` instead of `file` for
+    checking whether an executable was made for the right system. This makes the
+    check more portable. While doing this the Linux kernel header check was
+    removed. This check was too conservative and disallowed Rust and Go binaries
+    that were fine.
+
 ## v1.0.0-rc.2
 
 * New features

@@ -22,10 +22,15 @@ if [ ! -d "$RELEASE_DIR/lib" -o ! -d "$RELEASE_DIR/releases" ]; then
     exit 1
 fi
 
-if [ -e "$CROSSCOMPILE-strip" ]; then
-    STRIP="$CROSSCOMPILE-strip"
-else
+STRIP="$CROSSCOMPILE-strip"
+READELF="$CROSSCOMPILE-readelf"
+if [ ! -e "$STRIP" -o ! -e "$READELF" ]; then
     echo "$SCRIPT_NAME: ERROR: Expecting \$CROSSCOMPILE to be set. Did you source nerves-env.sh?"
+    echo "  \"mix firmware\" should do this for you. Please file an issue is using \"mix\"."
+    echo "  Additional information:"
+    echo "    strip=$STRIP"
+    echo "    readelf=$READELF"
+    exit 1
 fi
 
 # Clean up the Erlang release of all the files that we don't need.
@@ -52,91 +57,78 @@ find "$RELEASE_DIR/releases" \( -name "*.sh" \
 # Scrub the executables
 #
 
-executable_type()
+readelf_headers()
 {
-    # Run 'file' on $1, trim out parts
-    # that can vary on a platform, and
-    # normalize whitespace
-
-    # NOTE: The SYSV vs. GNU/Linux part has to be removed
-    #       since C++ template instantiation enables the
-    #       GNU/Linux extension, but doesn't actually
-    #       break anything.
-    file -b "$1" \
-        | sed 's/, BuildID[^,]*,/,/g' \
-        | sed 's/, dynamically linked,/,/g' \
-        | sed 's/,[^,]*debug_info//g' \
-        | sed 's/,[^,]*stripped//g' \
-        | sed 's/[[:space:]]\+/ /g' \
-        | sed 's/[[:space:]]*(SYSV)//g' \
-        | sed 's/[[:space:]]*(GNU\/Linux)//g'
+    if ! "$READELF" -h "$1" 2>/dev/null; then
+        echo "not_elf"
+    fi
 }
 
-get_expected_dynamic_executable_type()
+executable_type()
+{
+    FILE="$1"
+    READELF_OUTPUT="$2"
+
+    ELF_MACHINE=$(echo "$READELF_OUTPUT" | sed -E -e '/^  Machine: +(.+)/!d; s//\1/;' | head -1)
+    ELF_FLAGS=$(echo "$READELF_OUTPUT" | sed -E -e '/^  Flags: +(.+)/!d; s//\1/;' | sed -E -e 's/(, <unknown>)//' | sed -E -e 's/^0x[0-9]*\,\s//' | head -1)
+
+    if [ -z "$ELF_MACHINE" ]; then
+        echo "$SCRIPT_NAME: ERROR: Didn't expect empty machine field in ELF header in $FILE." 1>&2
+        echo "   Try running '$READELF -h $FILE' and" 1>&2
+        echo "   and create an issue at https://github.com/nerves-project/nerves_system_br/issues." 1>&2
+        exit 1
+    fi
+    echo "$ELF_MACHINE;$ELF_FLAGS"
+}
+
+get_expected_executable_type()
 {
     # Compile a trivial C program with the crosscompiler
     # so that we know what the `file` output should look like.
     tmpfile=$(mktemp /tmp/scrub-otp-release.XXXXXX)
     echo "int main() {}" | "$CROSSCOMPILE-gcc" -x c -o "$tmpfile" -
-    executable_type "$tmpfile"
-    rm "$tmpfile"
-}
-
-get_expected_static_executable_type()
-{
-    # Compile a trivial C program with the crosscompiler
-    # so that we know what the `file` output should look like.
-    tmpfile=$(mktemp /tmp/scrub-otp-release.XXXXXX)
-    echo "int main() {}" | "$CROSSCOMPILE-gcc" -x c -static -o "$tmpfile" -
-    executable_type "$tmpfile"
-    rm "$tmpfile"
-}
-
-get_expected_library_type()
-{
-    # Compile a trivial C shared library with the crosscompiler
-    # so that we know what the `file` output should look like.
-    tmpfile=$(mktemp /tmp/scrub-otp-release.XXXXXX)
-    echo "void doit() {}" | "$CROSSCOMPILE-gcc" --shared -x c -o "$tmpfile" -
-    executable_type "$tmpfile"
+    executable_type "$tmpfile" "$(readelf_headers "$tmpfile")"
     rm "$tmpfile"
 }
 
 EXECUTABLES=$(find "$RELEASE_DIR" -type f -perm -100)
-EXPECTED_DYNAMIC_BIN_TYPE=$(get_expected_dynamic_executable_type)
-EXPECTED_STATIC_BIN_TYPE=$(get_expected_static_executable_type)
-EXPECTED_SO_TYPE=$(get_expected_library_type)
+EXPECTED_TYPE=$(get_expected_executable_type)
 
 for EXECUTABLE in $EXECUTABLES; do
-    case $(file -b "$EXECUTABLE") in
-        *ELF*)
-            # Verify that the executable was compiled for the target
-            TYPE=$(executable_type "$EXECUTABLE")
-            if [ "$TYPE" != "$EXPECTED_DYNAMIC_BIN_TYPE" -a "$TYPE" != "$EXPECTED_STATIC_BIN_TYPE" -a "$TYPE" != "$EXPECTED_SO_TYPE" ]; then
-                echo "$SCRIPT_NAME: ERROR: Unexpected executable format for '$EXECUTABLE'"
-                echo
-                echo "Got:"
-                echo " $TYPE"
-                echo
-                echo "If binary, expecting:"
-                echo " $EXPECTED_DYNAMIC_BIN_TYPE"
-                echo
-                echo "or, for static binaries:"
-                echo " $EXPECTED_STATIC_BIN_TYPE"
-                echo
-                echo "If shared library, expecting:"
-                echo " $EXPECTED_SO_TYPE"
-                echo
-                echo " This file may have been compiled for the host or a different target."
-                echo " Make sure that nerves-env.sh has been sourced and rebuild to fix this."
-                echo
-                exit 1
-            fi
+    READELF_OUTPUT=$(readelf_headers "$EXECUTABLE")
+    if [ "$READELF_OUTPUT" != "not_elf" ]; then
+        # Verify that the executable was compiled for the target
+        TYPE=$(executable_type "$EXECUTABLE" "$READELF_OUTPUT")
+        if [ "$TYPE" != "$EXPECTED_TYPE" ]; then
+            echo "$SCRIPT_NAME: ERROR: Unexpected executable format for '$EXECUTABLE'"
+            echo
+            echo "Got:"
+            echo " $TYPE"
+            echo
+            echo "Expecting:"
+            echo " $EXPECTED_TYPE"
+            echo
+            echo "This file was compiled for the host or a different target and probably"
+            echo "will not work."
+            echo
+            echo "Check the following:"
+            echo
+            echo "1. Are you using a path dependency in your mix deps? If so, run"
+            echo "   'mix clean' in that directory to avoid pulling in any of its"
+            echo "   build products."
+            echo "2. Did you recently upgrade or change your Nerves system? If so,"
+            echo "   try cleaning and rebuilding this project and its deps."
+            echo "3. Are you building outside of Nerves' mix integration? If so,"
+            echo "   make sure that you've sourced 'nerves-env.sh'."
+            echo
+            echo "If you're still having trouble, please file an issue on Github"
+            echo "at https://github.com/nerves-project/nerves_system_br/issues."
+            echo
+            exit 1
+        fi
 
-            # Strip debug information from ELF binaries
-            # Symbols are still available to the user in the release directory.
-            $STRIP "$EXECUTABLE"
-            ;;
-        *) ;;
-    esac
+        # Strip debug information from ELF binaries
+        # Symbols are still available to the user in the release directory.
+        $STRIP "$EXECUTABLE"
+    fi
 done
