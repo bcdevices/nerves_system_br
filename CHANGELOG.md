@@ -1,5 +1,52 @@
 # Changelog
 
+## v1.5.2
+
+* Package updates
+  * rpi-firmware - bump to the latest Linux 4.14.71 update to fix flaky USB on
+    the Raspberry Pi Zero.
+
+## v1.5.1
+
+* Package updates
+  * bborg-overlays - Update to the latest device tree overlay set for the
+    Beaglebone platforms
+  * boardid - Add preliminary support for pulling serial numbers from the
+    ATECC508A crypto chip
+
+## v1.5.0
+
+This version updates Buildroot to 2018.08. If you are using a system with
+U-Boot, you may see a compiler error due to the new version of the device tree
+compiler. See http://buildroot-busybox.2317881.n4.nabble.com/Buildroot-2018-08-released-td203016.html
+for options.
+
+* Package updates
+  * Buildroot 2018.08
+  * nerves_heart 0.2.0 - Pulls in minor fix from upstream and changes printfs to
+    logs that can be captured by the Elixir logger.
+  * erlang 21.0.9
+
+* Bug fixes
+  * Fixed bizarre slowdown on some Macs due to using chained calls to sed. This
+    version converts those calls into one. Thanks to Jason Butterfield for
+    finding and fixing this issue.
+
+## v1.4.5
+
+* Bug fixes
+  * Updated docker image with better handling for switching user
+    in the docker-entrypoint script.
+  * Updated patch for erlang 21.0.6
+
+## v1.4.4
+
+Improved the error message presented from scripts/scrub-otp-release.sh
+when encountering an executable that was compiled for a different target.
+
+* Package updates
+  * erlang 21.0.6
+
 ## v1.4.3
 
 * Package updates
