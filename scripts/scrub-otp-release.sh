@@ -17,14 +17,14 @@ if [ ! -d "$RELEASE_DIR" ]; then
     exit 1
 fi
 
-if [ ! -d "$RELEASE_DIR/lib" ] || [ ! -d "$RELEASE_DIR/releases" ]; then
+if [ ! -d "$RELEASE_DIR/lib" -o ! -d "$RELEASE_DIR/releases" ]; then
     echo "$SCRIPT_NAME: ERROR: Expecting '$RELEASE_DIR' to contain 'lib' and 'releases' subdirectories"
     exit 1
 fi
 
 STRIP="$CROSSCOMPILE-strip"
 READELF="$CROSSCOMPILE-readelf"
-if [ ! -e "$STRIP" ] || [ ! -e "$READELF" ]; then
+if [ ! -e "$STRIP" -o ! -e "$READELF" ]; then
     echo "$SCRIPT_NAME: ERROR: Expecting \$CROSSCOMPILE to be set. Did you source nerves-env.sh?"
     echo "  \"mix firmware\" should do this for you. Please file an issue is using \"mix\"."
     echo "  Additional information:"
@@ -57,40 +57,28 @@ find "$RELEASE_DIR/releases" \( -name "*.sh" \
 # Scrub the executables
 #
 
+readelf_headers()
+{
+    if ! "$READELF" -h "$1" 2>/dev/null; then
+        echo "not_elf"
+    fi
+}
+
 executable_type()
 {
-    FILE=$1
+    FILE="$1"
+    READELF_OUTPUT="$2"
 
-    # Try readelf first, since it's output seems more trustworthy for executables
-    READELF_OUTPUT=$("$READELF" -h "$FILE" 2>/dev/null || true)
-    if [ "$READELF_OUTPUT" ]; then
-        ELF_MACHINE=$(echo "$READELF_OUTPUT" | sed -E -e '/^  Machine: +(.+)/!d; s//\1/;' | head -1)
-        ELF_FLAGS=$(echo "$READELF_OUTPUT" | sed -E -e '/^  Flags: +(.+)/!d; s//\1/;' | sed -E -e 's/(, <unknown>)//' | sed -E -e 's/^0x[0-9]*\,\s//' | head -1)
+    ELF_MACHINE=$(echo "$READELF_OUTPUT" | sed -E -e '/^  Machine: +(.+)/!d; s//\1/;' | head -1)
+    ELF_FLAGS=$(echo "$READELF_OUTPUT" | sed -E -e '/^  Flags: +(.+)/!d; s//\1/;' | sed -E -e 's/(, <unknown>)//' | sed -E -e 's/^0x[0-9]*\,\s//' | head -1)
 
-        if [ -z "$ELF_MACHINE" ]; then
-            echo "$SCRIPT_NAME: ERROR: Didn't expect empty machine field in ELF header in $FILE." 1>&2
-            echo "   Try running '$READELF -h $FILE' and" 1>&2
-            echo "   and create an issue at https://github.com/nerves-project/nerves_system_br/issues." 1>&2
-            exit 1
-        fi
-        echo "readelf:$ELF_MACHINE;$ELF_FLAGS"
-    else
-        # readelf didn't work, so try file and guess at things that will cause problems
-        FILE_OUTPUT=$(file -b -h "$FILE")
-        case "$FILE_OUTPUT" in
-            *shared*library*)
-                echo "file:$FILE_OUTPUT"
-                ;;
-
-            *x86_64*)
-                echo "file:$FILE_OUTPUT"
-                ;;
-
-            *)
-                echo "portable"
-                ;;
-        esac
+    if [ -z "$ELF_MACHINE" ]; then
+        echo "$SCRIPT_NAME: ERROR: Didn't expect empty machine field in ELF header in $FILE." 1>&2
+        echo "   Try running '$READELF -h $FILE' and" 1>&2
+        echo "   and create an issue at https://github.com/nerves-project/nerves_system_br/issues." 1>&2
+        exit 1
     fi
+    echo "$ELF_MACHINE;$ELF_FLAGS"
 }
 
 get_expected_executable_type()
@@ -99,7 +87,7 @@ get_expected_executable_type()
     # so that we know what the `file` output should look like.
     tmpfile=$(mktemp /tmp/scrub-otp-release.XXXXXX)
     echo "int main() {}" | "$CROSSCOMPILE-gcc" -x c -o "$tmpfile" -
-    executable_type "$tmpfile"
+    executable_type "$tmpfile" "$(readelf_headers "$tmpfile")"
     rm "$tmpfile"
 }
 
@@ -107,9 +95,10 @@ EXECUTABLES=$(find "$RELEASE_DIR" -type f -perm -100)
 EXPECTED_TYPE=$(get_expected_executable_type)
 
 for EXECUTABLE in $EXECUTABLES; do
-    TYPE=$(executable_type "$EXECUTABLE")
-    if [ "$TYPE" != "portable" ]; then
+    READELF_OUTPUT=$(readelf_headers "$EXECUTABLE")
+    if [ "$READELF_OUTPUT" != "not_elf" ]; then
         # Verify that the executable was compiled for the target
+        TYPE=$(executable_type "$EXECUTABLE" "$READELF_OUTPUT")
         if [ "$TYPE" != "$EXPECTED_TYPE" ]; then
             echo "$SCRIPT_NAME: ERROR: Unexpected executable format for '$EXECUTABLE'"
             echo

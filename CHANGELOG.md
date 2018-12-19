@@ -1,5 +1,56 @@
 # Changelog
 
+## v1.6.2
+
+This is a patch release. There's no reason to upgrade unless you've run into the
+issues below.
+
+* Package updates
+  * erlinit 1.4.8 - improves hostname checks to help avoid setting non-RFC 1123
+    compliant names
+  * boardid 1.5.0 - adds support for specifying parameters via
+    /etc/boardid.config
+
+## v1.6.1
+
+This pulls in a pending patch in Buildroot to update the version of
+OpenSSL from 1.0.2 to 1.1.0h. This fixes what appears to be issues with
+Erlang using OpenSSL engines. It also enables Erlang crypto algorithms
+such as ed25519 that have been added in recent Erlang releases.
+
+* Package updates
+  * openssl 1.1.0h
+  * erlang 21.2
+  * libp11 0.4.9
+
+## v1.6.0
+
+This updates Buildroot to 2018.11. Buildroot release notes are at
+http://lists.busybox.net/pipermail/buildroot/2018-December/237402.html.
+
+* Package updates
+  * Buildroot 2018.11
+  * erlang 21.1.4
+  * boardid 1.4.0 - NervesKey serial number support
+
+## v1.5.6
+
+Re-package v1.5.5 on hex.pm to fix archive errors from
+https://github.com/hexpm/hex/issues/631
+
+## v1.5.5
+
+* Bug fixes
+  * Remove Busybox commands: tc, svok, and i2c tools. These weren't intended to
+    be enabled and either don't work with Nerves or have Elixir equivialents
+  * Remove Powershell and .script files from firmware for minor firmware size
+    reductions
+
+* Package updates
+  * Buildroot 2018.08.3 - This is a security/bug fix update
+  * erlang 21.1.3
+  * boardid 1.3.0 - better ATECC508A support
+
 ## v1.5.4
 
 * Bug fixes
