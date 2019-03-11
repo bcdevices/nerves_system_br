@@ -1,5 +1,79 @@
 # Changelog
 
+## v1.7.0
+
+This updates Buildroot to 2019.02. Buildroot release notes are at
+http://buildroot-busybox.2317881.n4.nabble.com/Buildroot-2019-02-released-td217410.html.
+
+* Package updates
+  * Buildroot 2019.02
+  * erlang 21.2.7
+
+## v1.6.8
+
+* Package updates
+  * erlang 21.2.6
+
+* Bug fixes
+  * Bump fwup version in the associated DockerFile
+  * Fix Erlang/OTP version check in dev scripts
+
+## v1.6.7
+
+* Package updates
+  * erlang 21.2.5
+  * fwup 1.3.0 - support expanding the data partition to be as large as possible
+
+With this release, a host version of Erlang is no longer built. This version of
+Erlang isn't used except for some very rare cases that don't seem to be used any
+longer. This change reduces the build time by minutes.
+
+## v1.6.6
+
+* Package updates
+  * erlang 21.2.4
+  * boardid 1.5.3
+
+This release also contains some cleanup to the Erlang DNS resolver
+configuration. Previously, if the Erlang resolver failed, the system (C library)
+resolver would be tried. Since the Erlang and system resolvers were configured
+the same, this fallback to the system resolver shouldn't have worked. In the
+cleanup, the fallback to the system resolver was removed. See
+`board/nerves-common/rootfs_overlay/etc/erl_inetrc` for the new default
+configuration.
+
+## v1.6.5
+
+* Package updates
+  * OpenSSL 1.1.1a
+
+The associated Docker image (nervesproject/nerves_system_br) now has Erlang
+21.2.2 installed on it. Erlang 21.2.2 + OpenSSL 1.1.1a enable more features with
+the `:crypto` library like ed25519 support. See the Erlang 21.2.x release notes.
+
+## v1.6.4
+
+* Package updates
+  * erlang 21.2.2
+  * boardid 1.5.2
+
+## v1.6.3
+
+This release pulls in a bug fix/security release from Buildroot and support for
+starting Erlang via the `run_erl` command so that console messages can be logged
+using standard OTP tools. Currently none of the official systems are switching
+to `run_erl`, but that may happen in the future. It's now feasible to point the
+console to `/dev/null` and not miss console messages if you need to lock down
+all unauthenticated console access.
+
+* Package updates
+  * Buildroot 2018.11.1
+  * erlinit 1.4.9
+  * boardid 1.5.1
+  * rpi-firmware - corresponds with 4.14.78. If you have a custom rpi you may
+    want to bump your kernel version especially for the RPi 3 B+ which has an
+    Ethernet reliability fix. See `nerves_system_rpi3`.
+
 ## v1.6.2
 
 This is a patch release. There's no reason to upgrade unless you've run into the
